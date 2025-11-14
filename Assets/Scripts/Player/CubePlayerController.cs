@@ -177,12 +177,6 @@ public class CubePlayerController : MonoBehaviour
         Vector3 newScale = originalScale;
         newScale.y = currentHeight;
         transform.localScale = newScale;
-
-        float heightDifference = (normalHeight - currentHeight) * 0.5f;
-        Vector3 position = transform.position;
-        position.y = originalScale.y * 0.5f + heightDifference;
-
-        transform.position = new Vector3(transform.position.x, position.y, transform.position.z);
     }
 
     private void Jump()
