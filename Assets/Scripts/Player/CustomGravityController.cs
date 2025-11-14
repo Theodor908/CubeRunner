@@ -128,7 +128,6 @@ public class CustomGravityController : MonoBehaviour
     {
         if (isGrounded)
         {
-            // Apply force opposite to gravity direction
             rb.AddForce(-gravityDirection.normalized * jumpForce, ForceMode.Impulse);
         }
     }

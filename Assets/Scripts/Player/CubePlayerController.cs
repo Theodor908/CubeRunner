@@ -9,9 +9,7 @@ public class CubePlayerController : MonoBehaviour
     [Header("Movement Settings")]
     [SerializeField] private float initialSpeed = 5f;
     [SerializeField] private float acceleration = 0.5f; // Speed increase per second
-    [SerializeField] private float maxSpeed = 30f;
-    [SerializeField] private float horizontalMoveSpeed = 8f;
-    [SerializeField] private float maxHorizontalOffset = 5f; // How far left/right the player can go
+    [SerializeField] private float horizontalMoveSpeed = 15f;
 
     [Header("Jump Settings")]
     [SerializeField] private float jumpForce = 12f;
@@ -21,6 +19,8 @@ public class CubePlayerController : MonoBehaviour
     [SerializeField] private float normalHeight = 1f;
     [SerializeField] private float crouchHeight = 0.5f;
     [SerializeField] private float crouchTransitionSpeed = 10f;
+    [SerializeField] private float crouchSpeedBoost = 10f;
+    private bool appliedCrouchBoost = false;
 
     [Header("Rotation Settings")]
     [SerializeField] private bool enableWheelRotation = true;
@@ -51,7 +51,6 @@ public class CubePlayerController : MonoBehaviour
 
     public float CurrentSpeed => currentSpeed;
     public bool IsCrouching => isCrouching;
-    public float MaxSpeed => maxSpeed;
     public float Acceleration => acceleration;
 
     private void Awake()
@@ -141,11 +140,9 @@ public class CubePlayerController : MonoBehaviour
 
     private void AccelerateForward()
     {
-        if (currentSpeed < maxSpeed)
-        {
-            currentSpeed += acceleration * Time.fixedDeltaTime;
-            currentSpeed = Mathf.Min(currentSpeed, maxSpeed);
-        }
+
+        currentSpeed += acceleration * Time.fixedDeltaTime;
+        crouchSpeedBoost = acceleration * Time.fixedDeltaTime;
 
         Vector3 forwardMovement = Vector3.forward * currentSpeed;
 
@@ -177,6 +174,18 @@ public class CubePlayerController : MonoBehaviour
         Vector3 newScale = originalScale;
         newScale.y = currentHeight;
         transform.localScale = newScale;
+
+        if (isCrouching && appliedCrouchBoost == false)
+        {
+            AddSpeed(crouchSpeedBoost);
+            appliedCrouchBoost = true;
+        }
+
+        if (!isCrouching && appliedCrouchBoost == true)
+        {
+            AddSpeed(-crouchSpeedBoost);
+            appliedCrouchBoost = false;
+        }
     }
 
     private void Jump()
@@ -211,7 +220,6 @@ public class CubePlayerController : MonoBehaviour
         // For each unit moved forward, the cube should rotate 360 degrees
         float rotationAmount = (distanceThisFrame / (2f * Mathf.PI * 0.5f)) * rotationSpeedMultiplier;
 
-        // Rotate around the X-axis (rolling forward)
         visualCube.Rotate(Vector3.right, rotationAmount, Space.Self);
 
         lastPosition = transform.position;
@@ -220,12 +228,12 @@ public class CubePlayerController : MonoBehaviour
 
     public void SetSpeed(float speed)
     {
-        currentSpeed = Mathf.Clamp(speed, 0, maxSpeed);
+        currentSpeed = speed;
     }
 
     public void AddSpeed(float speedBoost)
     {
-        currentSpeed = Mathf.Clamp(currentSpeed + speedBoost, 0, maxSpeed);
+        currentSpeed = currentSpeed + speedBoost;
     }
 
     public void ResetSpeed()
