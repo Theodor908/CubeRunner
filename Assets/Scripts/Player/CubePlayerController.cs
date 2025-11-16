@@ -1,4 +1,6 @@
-using System;
+﻿using System;
+using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -7,20 +9,23 @@ using UnityEngine.InputSystem;
 public class CubePlayerController : MonoBehaviour
 {
     [Header("Movement Settings")]
+    [SerializeField] private bool isFrozen = false;
     [SerializeField] private float initialSpeed = 5f;
     [SerializeField] private float acceleration = 0.5f; // Speed increase per second
     [SerializeField] private float horizontalMoveSpeed = 15f;
+    [SerializeField] private float maxSpeed = 50f;
 
     [Header("Jump Settings")]
     [SerializeField] private float jumpForce = 12f;
     [SerializeField] private float jumpCooldown = 0.2f;
+    [SerializeField] private float numberOfAirJumps = 1;
 
     [Header("Crouch Settings")]
     [SerializeField] private float normalHeight = 1f;
     [SerializeField] private float crouchHeight = 0.5f;
     [SerializeField] private float crouchTransitionSpeed = 10f;
-    [SerializeField] private float crouchSpeedBoost = 10f;
-    private bool appliedCrouchBoost = false;
+    private float crouchSpeedBoost = 0f;
+    private float maxCrouchBoost = 10f;
 
     [Header("Rotation Settings")]
     [SerializeField] private bool enableWheelRotation = true;
@@ -41,6 +46,8 @@ public class CubePlayerController : MonoBehaviour
     private bool isCrouching;
     private bool jumpInput;
     private bool canJump = true;
+    private bool allowAirJump = true;
+    private float numberOfJumps = 1;
     private float lastJumpTime;
     private Vector3 originalScale;
     private float targetHeight;
@@ -118,23 +125,29 @@ public class CubePlayerController : MonoBehaviour
 
     private void Update()
     {
-        HandleInput();
-        HandleCrouching();
+        if (isFrozen == false)
+        {
+            HandleInput();
+            HandleCrouching();
+        }
     }
 
     private void FixedUpdate()
     {
-        AccelerateForward();
-        HandleHorizontalMovement();
-        HandleWheelRotation();
-        UpdateCanJump();
+        if (isFrozen == false)
+        {
+            HandleHorizontalMovement();
+            AccelerateForward();
+            HandleWheelRotation();
+            UpdateCanJump();
+        }
     }
 
     private void HandleInput()
     {
         horizontalInput = movementInput.x;
        
-        if(jumpInput && canJump)
+        if(jumpInput)
             Jump();
     }
 
@@ -142,7 +155,8 @@ public class CubePlayerController : MonoBehaviour
     {
 
         currentSpeed += acceleration * Time.fixedDeltaTime;
-        crouchSpeedBoost = acceleration * Time.fixedDeltaTime;
+
+        currentSpeed = Mathf.Min(currentSpeed, maxSpeed);
 
         Vector3 forwardMovement = Vector3.forward * currentSpeed;
 
@@ -168,35 +182,63 @@ public class CubePlayerController : MonoBehaviour
     private void HandleCrouching()
     {
         targetHeight = isCrouching ? crouchHeight : normalHeight;
-
         currentHeight = Mathf.Lerp(currentHeight, targetHeight, Time.deltaTime * crouchTransitionSpeed);
 
         Vector3 newScale = originalScale;
         newScale.y = currentHeight;
         transform.localScale = newScale;
 
-        if (isCrouching && appliedCrouchBoost == false)
+
+
+        if (crouchSpeedBoost < 0)
         {
-            AddSpeed(crouchSpeedBoost);
-            appliedCrouchBoost = true;
+            crouchSpeedBoost = 0f;
         }
 
-        if (!isCrouching && appliedCrouchBoost == true)
+        if (isCrouching && gravityController.IsGrounded())
         {
-            AddSpeed(-crouchSpeedBoost);
-            appliedCrouchBoost = false;
+            if (crouchSpeedBoost < maxCrouchBoost)
+            {
+                float boostGain = 5f * Time.deltaTime;
+                crouchSpeedBoost += boostGain;
+                crouchSpeedBoost = Mathf.Min(crouchSpeedBoost, maxCrouchBoost);
+                AddSpeed(boostGain);
+            }
+        }
+        else if (crouchSpeedBoost > 0.5f)
+        {
+            float boostLoss = 3f * Time.deltaTime;
+            crouchSpeedBoost -= boostLoss;
+            AddSpeed(-boostLoss);
         }
     }
 
     private void Jump()
     {
         jumpInput = false;
-        if (Time.time - lastJumpTime < jumpCooldown)
+        if (canJump)
+        {
+            if (Time.time - lastJumpTime < jumpCooldown)
+                return;
+            gravityController.Jump(jumpForce);
+            lastJumpTime = Time.time;
+            canJump = false;
+            numberOfJumps = numberOfAirJumps;
+            Debug.Log("Jumped");
             return;
+        }
 
-        gravityController.Jump(jumpForce);
-        lastJumpTime = Time.time;
-        canJump = false;
+        if (!canJump && allowAirJump == true)
+        {
+            if (numberOfJumps > 0)
+            {
+                gravityController.Jump(jumpForce);
+                numberOfJumps--;
+                Debug.Log("Air Jumped");
+            }
+        }
+
+
     }
 
     private void UpdateCanJump()
@@ -223,6 +265,16 @@ public class CubePlayerController : MonoBehaviour
         visualCube.Rotate(Vector3.right, rotationAmount, Space.Self);
 
         lastPosition = transform.position;
+    }
+
+    public void SetFreeze(bool freeze)
+    {
+        isFrozen = freeze;
+    }
+
+    public bool IsFrozen()
+    {
+        return isFrozen;
     }
 
 

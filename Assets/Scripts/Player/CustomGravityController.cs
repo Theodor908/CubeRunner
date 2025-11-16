@@ -30,6 +30,8 @@ public class CustomGravityController : MonoBehaviour
     [Header("Advanced Options")]
     [Tooltip("Multiply gravity when falling (for better feel)")]
     [SerializeField] private float fallGravityMultiplier = 1.5f;
+    [Tooltip("Jump force multiplier")]
+    [SerializeField] private float jumpForceMultiplier = 1.0f;
 
     [Tooltip("Apply fall multiplier when moving downward")]
     [SerializeField] private bool useFallMultiplier = true;
@@ -129,6 +131,10 @@ public class CustomGravityController : MonoBehaviour
         if (isGrounded)
         {
             rb.AddForce(-gravityDirection.normalized * jumpForce, ForceMode.Impulse);
+        }
+        else
+        {
+            rb.AddExplosionForce(jumpForce * jumpForceMultiplier, transform.position + gravityDirection.normalized, 1f, 0.5f, ForceMode.Impulse);
         }
     }
 

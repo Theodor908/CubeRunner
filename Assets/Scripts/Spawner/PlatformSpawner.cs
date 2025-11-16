@@ -10,6 +10,7 @@ public class PlatformSpawner : MonoBehaviour
     [Header("Platform Prefabs")]
     [SerializeField] private List<GameObject> platformPrefabs;
     [SerializeField] private GameObject defaultPlatformPrefab;
+    private GameObject previousPlatform;
 
     [Header("Spawn Control")]
     [SerializeField] private int platformsPerBatch = 6;
@@ -52,10 +53,6 @@ public class PlatformSpawner : MonoBehaviour
     [SerializeField] private Transform player;
     [SerializeField] private CubePlayerController playerController;
 
-    [Header("Debug")]
-    [SerializeField] private bool showDebugInfo = true;
-    [SerializeField] private bool showGizmos = true;
-
     // Internal state
     private List<PlatformData> activePlatforms;
     private Vector3 lastPlatformPosition;
@@ -83,7 +80,6 @@ public class PlatformSpawner : MonoBehaviour
                 Debug.LogError("No platform prefabs assigned!");
         }
 
-        // Initialize
         activePlatforms = new List<PlatformData>();
     }
 
@@ -113,7 +109,7 @@ public class PlatformSpawner : MonoBehaviour
         Vector3 startPos = player.position;
         startPos.y -= 2f; // Slightly below player
         GameObject prefab = defaultPlatformPrefab;
-
+        previousPlatform = prefab;
         SpawnPlatform(startPos, prefab);
         lastPlatformPosition = startPos;
 
@@ -145,16 +141,21 @@ public class PlatformSpawner : MonoBehaviour
             SpawnNextPlatform();
         }
 
+        GameManager.Instance.SetLastPlatformY(lastPlatformPosition.y);
         isSpawning = false;
+
     }
 
     private void SpawnNextPlatform()
     {
         GameObject prefab = platformPrefabs[Random.Range(0, platformPrefabs.Count)];
+        
+        while(prefab == previousPlatform && platformPrefabs.Count > 1)
+        {
+            prefab = platformPrefabs[Random.Range(0, platformPrefabs.Count)];
+        }
 
-        BasePlatform basePlatform = prefab.GetComponent<BasePlatform>();
-
-        if (basePlatform == null) return;
+        if (!prefab.TryGetComponent<BasePlatform>(out var basePlatform)) return;
 
         float platformWidth = basePlatform.BasePlatformWidth;
         float platformHeight = basePlatform.BasePlatformHeight;
@@ -165,8 +166,6 @@ public class PlatformSpawner : MonoBehaviour
         if (gap < 0) gap = 0;
 
         float spawnZ = lastPlatformPosition.z + gap + platformLength;
-
-        Debug.Log(lastPlatformPosition.z + " " + gap + " " + platformLength);
 
         float spawnX = CalculateIntelligentX() + Random.Range(-platformWidth, platformWidth);
 
@@ -241,7 +240,6 @@ public class PlatformSpawner : MonoBehaviour
         targetY = lastY + deltaY;
         targetY -= 0.05f;
 
-        Debug.Log(targetY);
         return targetY;
     }
 
@@ -276,7 +274,6 @@ public class PlatformSpawner : MonoBehaviour
             }
         }
     }
-
     #endregion
 
     #region Public API
@@ -303,6 +300,12 @@ public class PlatformSpawner : MonoBehaviour
     {
         return lastPlatformPosition;
     }
+
+    public bool FinishedSpawning()
+    {
+        return !isSpawning;
+    }
+
 
     #endregion
 }
