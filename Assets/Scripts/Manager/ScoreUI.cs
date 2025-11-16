@@ -97,10 +97,8 @@ public class ScoreUI : MonoBehaviour
 
     public void ShowJumpScore(float points, float multiplier, List<string> riskFactors)
     {
-        Debug.Log("Attempting to show jump score popup.");
         if (jumpScorePopup == null) return;
 
-        Debug.Log($"Showing Jump Score Popup: +{points:F0} points, x{multiplier:F1} multiplier");
         if (popupCoroutine != null)
         {
             StopCoroutine(popupCoroutine);

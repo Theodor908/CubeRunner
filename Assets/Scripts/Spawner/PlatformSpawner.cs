@@ -141,7 +141,7 @@ public class PlatformSpawner : MonoBehaviour
             SpawnNextPlatform();
         }
 
-        GameManager.Instance.SetLastPlatformY(lastPlatformPosition.y);
+        GameManager.Instance.UpdateDeathZonePostion(lastPlatformPosition.y);
         isSpawning = false;
 
     }

@@ -64,7 +64,7 @@ public class RiskBasedScoringSystem : MonoBehaviour
 
         if (gravityController == null)
         {
-            Debug.LogWarning("[Scoring] No CustomGravityController found. Using fallback ground detection.");
+            Debug.LogWarning("No CustomGravityController found. Using fallback ground detection.");
         }
 
         startPosition = playerTransform.position;
@@ -241,9 +241,6 @@ public class RiskBasedScoringSystem : MonoBehaviour
 
         bool isEdge = edgeCount >= 3;
 
-        if (showDebugInfo && isEdge)
-            Debug.Log($"[Edge Detection] {edgeCount}/{totalRays} rays off platform");
-
         return isEdge;
     }
 
@@ -251,8 +248,6 @@ public class RiskBasedScoringSystem : MonoBehaviour
     {
         if (currentCombo > 0 && Time.time - lastRiskyJumpTime > comboResetTime)
         {
-            if (showDebugInfo)
-                Debug.Log($"[Combo] Timeout. Reset from {currentCombo}");
             currentCombo = 0;
         }
     }
