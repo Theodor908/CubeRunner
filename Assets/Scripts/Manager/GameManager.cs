@@ -7,9 +7,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int deathZoneYOffset;
     [SerializeField] private float deathZoneTimeUpdateCooldown;
 
-    private float timeSinceLastUpdateTime = 0;
-    private int yDeathZone;
-    private bool deathZoneSet = false;
+    private int yDeathZone = int.MinValue;
 
     [Header("References")]
     [SerializeField] private GameObject player;
@@ -19,8 +17,6 @@ public class GameManager : MonoBehaviour
     private Transform playerTransform;
     private CubePlayerController playerController;
     private PlatformSpawner spawnerController;
-
-    private float lastPlatformY;
 
     private void Awake()
     {
@@ -54,39 +50,12 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
-        if (deathZoneSet == false)
-        {
-            GetStartDeathZone();
-        }
-
-        UpdateDeathZonePostion();
         CheckPlayerFall();
     }
 
-    private void GetStartDeathZone()
+    public void UpdateDeathZonePostion(float lastPlatformY)
     {
-        while (spawnerController.FinishedSpawning() == false)
-        {
-        }
-
         yDeathZone = Mathf.FloorToInt(lastPlatformY) - deathZoneYOffset;
-        timeSinceLastUpdateTime = Time.deltaTime;
-        deathZoneSet = true;
-    }
-
-    private void UpdateDeathZonePostion()
-    {
-
-        if (Time.deltaTime - timeSinceLastUpdateTime > deathZoneTimeUpdateCooldown)
-        {
-            while (spawnerController.FinishedSpawning() == false) 
-            { 
-            }
-            yDeathZone = Mathf.FloorToInt(lastPlatformY) - deathZoneYOffset;
-            timeSinceLastUpdateTime = Time.deltaTime;
-            Debug.Log("Death Zone Updated to Y = " + yDeathZone);
-        }
-
     }
 
     private void CheckPlayerFall()
@@ -95,11 +64,6 @@ public class GameManager : MonoBehaviour
         {
             PlayerLost();
         }
-    }
-
-    public void SetLastPlatformY(float y)
-    {
-        lastPlatformY = y;
     }
 
     public void PlayerLost()

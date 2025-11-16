@@ -1,53 +1,215 @@
+using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
 public class EndgameUI : MonoBehaviour
 {
     [Header("Endgame Display")]
-    [SerializeField] private GameObject endgame;
-    [SerializeField] private TextMeshProUGUI finalScore;
-    [SerializeField] private TextMeshProUGUI top3;
+    [SerializeField] private GameObject endgamePanel;
+    [SerializeField] private TextMeshProUGUI finalScoreText;
+    [SerializeField] private TextMeshProUGUI leaderboardText;
 
-    private RiskBasedScoringSystem scoringSystem;
+    [Header("Loading")]
+    [SerializeField] private string loadingMessage = "Loading leaderboard...";
+
+    [Header("References")]
+    [SerializeField] private RiskBasedScoringSystem scoringSystem;
+    [SerializeField] private LeaderboardManager leaderboardManager;
+
+    [Header("Settings")]
+    [SerializeField] private int topScoreCount = 10;
+
+    private bool isShowing = false;
 
     private void Awake()
     {
-        scoringSystem = FindAnyObjectByType<RiskBasedScoringSystem>();
 
-        if(endgame != null)
+        if (scoringSystem == null)
         {
-            endgame.SetActive(false);
+            scoringSystem = FindAnyObjectByType<RiskBasedScoringSystem>();
+        }
+
+        if (leaderboardManager == null)
+        {
+            leaderboardManager = FindAnyObjectByType<LeaderboardManager>();
+        }
+
+        if (endgamePanel != null)
+        {
+            endgamePanel.SetActive(false);
         }
     }
 
     public void ShowEndgameUI()
     {
+        if (isShowing) return; 
+        isShowing = true;
 
+        // Unlock cursor
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        if (endgame != null)
+        // Show panel
+        if (endgamePanel != null)
         {
-            endgame.SetActive(true);
+            endgamePanel.SetActive(true);
         }
-        if (finalScore != null && scoringSystem != null)
+
+        ShowFinalScore();
+
+        // Show loading message
+        if (leaderboardText != null)
         {
-            finalScore.text = $"Final Score: {scoringSystem.GetTotalScore():F0}";
+            leaderboardText.text = loadingMessage;
         }
-        if (top3 != null)
+
+        StartCoroutine(SubmitAndFetchLeaderboard());
+    }
+
+    private void ShowFinalScore()
+    {
+        if (finalScoreText == null || scoringSystem == null)
         {
-            string topScores = PlayerPrefs.GetString("TopScores", "0,0,0");
-            string[] scores = topScores.Split(',');
-            top3.text = "Top 3 Scores:\n";
-            for (int i = 0; i < scores.Length; i++)
-            {
-                top3.text += $"{i + 1}. {scores[i]}\n";
+            return;
+        }
+
+        int finalScore = Mathf.RoundToInt(scoringSystem.GetTotalScore());
+        finalScoreText.text = $"Final Score: {finalScore:N0}";
+    }
+
+    private IEnumerator SubmitAndFetchLeaderboard()
+    {
+        if (leaderboardManager == null)
+        {
+            ShowError("Leaderboard unavailable");
+            yield break;
+        }
+
+        leaderboardManager.OnGameOver();
+
+        yield return new WaitForSeconds(0.5f);
+
+        bool fetchStarted = false;
+        bool fetchCompleted = false;
+        string errorMessage = null;
+
+        StartCoroutine(LeaderboardAPI.Instance.GetLeaderboard(
+            topScoreCount,
+            (entries) => {
+                fetchCompleted = true;
+                DisplayLeaderboard(entries);
+            },
+            (error) => {
+                fetchCompleted = true;
+                errorMessage = error;
             }
+        ));
+
+        fetchStarted = true;
+
+        float timeout = 10f;
+        float elapsed = 0f;
+
+        while (!fetchCompleted && elapsed < timeout)
+        {
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+
+        if (!fetchCompleted)
+        {
+            ShowError("Leaderboard timed out");
+        }
+        else if (errorMessage != null)
+        {
+            ShowError($"Failed to load leaderboard\n{errorMessage}");
         }
     }
 
-    public void Restart()
+    private void DisplayLeaderboard(LeaderboardEntry[] entries)
     {
-        GameManager.Instance.ResetGame();
+        if (leaderboardText == null)
+        {
+            return;
+        }
+
+        if (entries == null || entries.Length == 0)
+        {
+            leaderboardText.text = "No scores yet!\nBe the first!";
+            return;
+        }
+
+        string leaderboard = $"<b>Top {entries.Length} Scores:</b>\n\n";
+
+        string currentPlayerName = leaderboardManager.GetPlayerName();
+
+        for (int i = 0; i < entries.Length; i++)
+        {
+            var entry = entries[i];
+
+            bool isCurrentPlayer = entry.player_name == currentPlayerName;
+
+            if (isCurrentPlayer)
+            {
+                leaderboard += $"<color=yellow>#{entry.rank}. {entry.player_name}: {entry.score:N0}</color>\n";
+            }
+            else
+            {
+                leaderboard += $"#{entry.rank}. {entry.player_name}: {entry.score:N0}\n";
+            }
+        }
+
+        leaderboardText.text = leaderboard;
+    }
+
+
+    private void ShowError(string message)
+    {
+        if (leaderboardText != null)
+        {
+            leaderboardText.text = $"<color=red>{message}</color>";
+        }
+    }
+
+    public void HideEndgameUI()
+    {
+        if (endgamePanel != null)
+        {
+            endgamePanel.SetActive(false);
+        }
+
+        isShowing = false;
+
+    }
+
+    public void OnRestartClicked()
+    {
+
+        HideEndgameUI();
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.ResetGame();
+        }
+        else
+        {
+            Debug.LogError("[EndgameUI] GameManager not found!");
+            UnityEngine.SceneManagement.SceneManager.LoadScene(
+                UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex
+            );
+        }
+    }
+
+    public void OnQuitClicked()
+    {
+        Debug.Log("[EndgameUI] Quit button clicked");
+
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
     }
 }

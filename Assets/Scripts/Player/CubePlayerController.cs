@@ -222,7 +222,6 @@ public class CubePlayerController : MonoBehaviour
             lastJumpTime = Time.time;
             canJump = false;
             numberOfJumps = numberOfAirJumps;
-            Debug.Log("Jumped");
             return;
         }
 
@@ -232,7 +231,6 @@ public class CubePlayerController : MonoBehaviour
             {
                 gravityController.Jump(jumpForce);
                 numberOfJumps--;
-                Debug.Log("Air Jumped");
             }
         }
 
