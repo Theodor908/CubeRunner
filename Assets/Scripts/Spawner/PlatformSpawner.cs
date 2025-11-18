@@ -1,8 +1,5 @@
-using NUnit.Framework;
 using System.Collections.Generic;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
-using UnityEngine.Rendering.Universal;
 
 public class PlatformSpawner : MonoBehaviour
 {
@@ -50,13 +47,15 @@ public class PlatformSpawner : MonoBehaviour
     [SerializeField] private float cleanupDistance = 25f;
 
     [Header("References")]
-    [SerializeField] private Transform player;
-    [SerializeField] private CubePlayerController playerController;
+    [SerializeField] private Transform player = null;
+    [SerializeField] private CubePlayerController playerController = null;
 
     // Internal state
     private List<PlatformData> activePlatforms;
     private Vector3 lastPlatformPosition;
     private bool isSpawning = false;
+
+    private bool initialSpawned = false;
 
     private void Awake()
     {
@@ -83,19 +82,33 @@ public class PlatformSpawner : MonoBehaviour
         activePlatforms = new List<PlatformData>();
     }
 
-    private void Start()
-    {
-        SpawnInitialPlatform();
-        SpawnBatch();
-    }
-
     private void Update()
     {
-        if (player == null) return;
 
-        if (ShouldSpawnNextBatch())
+        if(initialSpawned == false && player != null)
         {
+            Debug.Log("Initialized platform");
+            SpawnInitialPlatform();
             SpawnBatch();
+            initialSpawned = true;
+            return;
+        }
+
+        if (player == null)
+        {
+            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+            if (playerObj != null)
+            {
+                Debug.Log("Found player");
+                player = playerObj.transform;
+                playerController = player.GetComponent<CubePlayerController>();
+            }
+        }
+
+        if (player != null && initialSpawned == true)
+        {
+            if(ShouldSpawnNextBatch())
+                SpawnBatch();
         }
 
         CleanupOldPlatforms();

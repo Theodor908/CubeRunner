@@ -41,11 +41,26 @@ public class EndgameUI : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        if (scoringSystem == null)
+        {
+            scoringSystem = FindAnyObjectByType<RiskBasedScoringSystem>();
+        }
+
+        if (leaderboardManager == null)
+        {
+            leaderboardManager = FindAnyObjectByType<LeaderboardManager>();
+        }
+    }
+
     public void ShowEndgameUI()
     {
+        Debug.Log("Entered show endgame");
         if (isShowing) return; 
         isShowing = true;
 
+        Debug.Log("Unlocked cursor");
         // Unlock cursor
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
@@ -56,6 +71,7 @@ public class EndgameUI : MonoBehaviour
             endgamePanel.SetActive(true);
         }
 
+        Debug.Log("Showing final score");
         ShowFinalScore();
 
         // Show loading message
@@ -71,9 +87,17 @@ public class EndgameUI : MonoBehaviour
     {
         if (finalScoreText == null || scoringSystem == null)
         {
-            return;
+            if (finalScoreText == null)
+            {
+                Debug.Log("fst null");
+            }
+            else
+            {
+                Debug.Log("ss null");
+            }
+                return;
         }
-
+        Debug.Log("Showing final score");
         int finalScore = Mathf.RoundToInt(scoringSystem.GetTotalScore());
         finalScoreText.text = $"Final Score: {finalScore:N0}";
     }

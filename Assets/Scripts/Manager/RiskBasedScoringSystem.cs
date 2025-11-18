@@ -84,6 +84,19 @@ public class RiskBasedScoringSystem : MonoBehaviour
 
             CheckComboTimeout();
         }
+
+        if(scoreUI == null)
+        {
+            // find by tag Canvas
+
+            GameObject gm = GameObject.FindGameObjectWithTag("Canvas");
+            if (gm != null)
+            {
+                scoreUI = gm.GetComponent<ScoreUI>();
+                Debug.Log("Found Canvas");
+            }
+
+        }
     }
 
     #region Distance Tracking

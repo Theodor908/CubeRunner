@@ -10,6 +10,8 @@ public class ThirdPersonCameraController : MonoBehaviour
     [SerializeField] private float _minDistance = 3f;
     [SerializeField] private float _maxDistance = 15f;
 
+    [SerializeField] private Transform _playerTransform;
+
     private PlayerControls playerControls;
 
     private CinemachineCamera _camera;
@@ -39,6 +41,21 @@ public class ThirdPersonCameraController : MonoBehaviour
 
     void Update()
     {
+
+        if (_playerTransform == null)
+        {
+            GameObject gm = GameObject.FindGameObjectWithTag("Player");
+
+            if (gm != null)
+            {
+                _playerTransform = gm.transform;
+                _camera.Follow = _playerTransform;
+            }
+        }
+
+        if (_playerTransform == null)
+            return;
+
         if(scrollDelta.y != 0)
         {
             if(_orbitalFollow != null)
