@@ -13,10 +13,13 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject player;
     [SerializeField] private GameObject spawner;
     [SerializeField] private EndgameUI endgameUI;
+    [SerializeField] private PlayerSpawner playerSpawner;
 
     private Transform playerTransform;
     private CubePlayerController playerController;
     private PlatformSpawner spawnerController;
+
+    private bool playerSpawnerInitialized = false;
 
     private void Awake()
     {
@@ -28,13 +31,6 @@ public class GameManager : MonoBehaviour
         }
         Instance = this;
 
-        player = GameObject.FindGameObjectWithTag("Player");
-
-        if (player == null)
-        {
-            Debug.LogError("No GameObject with tag 'Player' found.");
-        }
-
         spawner = GameObject.FindGameObjectWithTag("PlatformSpawner");
 
         if (spawner == null)
@@ -42,15 +38,34 @@ public class GameManager : MonoBehaviour
             Debug.LogError("No GameObject with tag 'PlatformSpawner' found.");
         }
 
-        playerTransform = player.transform;
-        playerController = player.GetComponent<CubePlayerController>();
-
         spawnerController = spawner.GetComponent<PlatformSpawner>();
     }
 
     private void Update()
     {
-        CheckPlayerFall();
+
+        if(playerSpawner == null)
+        {
+             playerSpawner = FindAnyObjectByType<PlayerSpawner>();
+        }
+
+        if (playerTransform != null)
+            CheckPlayerFall();
+
+        if(player == null)
+        {
+            if (playerSpawner.FoundSpawnPoint()  && playerSpawnerInitialized == false)
+            {
+                playerSpawner.SpawnPlayer(Quaternion.identity, false);
+                playerSpawnerInitialized= true;
+            }
+            player = GameObject.FindGameObjectWithTag("Player");
+            if(player != null)
+            {
+                playerTransform = player.transform;
+                playerController = player.GetComponent<CubePlayerController>();
+            }
+        }
     }
 
     public void UpdateDeathZonePostion(float lastPlatformY)
@@ -68,7 +83,12 @@ public class GameManager : MonoBehaviour
 
     public void PlayerLost()
     {
+        Debug.Log("Player lost wow");
         playerController.SetFreeze(true);
+        if (endgameUI == null)
+        { 
+        }
+        Debug.Log("Showing endgame");
         endgameUI.ShowEndgameUI();
 
     }

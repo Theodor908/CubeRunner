@@ -67,8 +67,6 @@ public class CubePlayerController : MonoBehaviour
         currentHeight = normalHeight;
         targetHeight = normalHeight;
 
-        SetupVisualCube();
-
         currentSpeed = initialSpeed;
 
         rb.constraints = RigidbodyConstraints.FreezeRotation;
@@ -136,7 +134,6 @@ public class CubePlayerController : MonoBehaviour
         {
             HandleHorizontalMovement();
             AccelerateForward();
-            HandleWheelRotation();
             UpdateCanJump();
         }
     }
@@ -243,24 +240,6 @@ public class CubePlayerController : MonoBehaviour
         {
             canJump = true;
         }
-    }
-
-    private void HandleWheelRotation()
-    {
-        if (!enableWheelRotation || visualCube == null)
-            return;
-
-        float distanceThisFrame = (transform.position - lastPosition).magnitude;
-        totalDistanceMoved += distanceThisFrame;
-
-        // Calculate rotation based on distance (like a wheel)
-        // Circumference = 2 * PI * radius, for a unit cube radius ? 0.5
-        // For each unit moved forward, the cube should rotate 360 degrees
-        float rotationAmount = (distanceThisFrame / (2f * Mathf.PI * 0.5f)) * rotationSpeedMultiplier;
-
-        visualCube.Rotate(Vector3.right, rotationAmount, Space.Self);
-
-        lastPosition = transform.position;
     }
 
     public void SetFreeze(bool freeze)
